@@ -1,14 +1,24 @@
 const express = require("express");
 const router = express.Router();
+const Location = require("../models/Location");
 
-router.post("/location", (req, res) => {
-  console.log("📍 Location received:");
-  console.log(req.body);
+router.post("/location", async (req, res) => {
+  try {
+    const { name, lat, lng, address } = req.body;
+    const userAgent = req.headers["user-agent"] || "Unknown";
 
-  res.json({
-    success: true,
-    message: "Location received"
-  });
+    await Location.create({
+      name,
+      lat,
+      lng,
+      address,
+      userAgent
+    });
+
+    res.json({ success: true, message: "Location saved to database" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 module.exports = router;

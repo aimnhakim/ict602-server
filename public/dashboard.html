@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ICT602 Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h2 { margin-bottom: 10px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
+    th { background: #f2f2f2; text-align: left; }
+    .small { color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h2>ICT602 Location Reports</h2>
+  <div class="small">Auto refresh every 5 seconds</div>
+  <br/>
+
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Date/Time</th>
+        <th>User-Agent</th>
+        <th>Address</th>
+        <th>Lat</th>
+        <th>Lng</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function load() {
+      const res = await fetch("/api/locations");
+      const data = await res.json();
+
+      const tbody = document.querySelector("#tbl tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(x => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${x.name || ""}</td>
+          <td>${new Date(x.createdAt).toLocaleString()}</td>
+          <td>${x.userAgent || ""}</td>
+          <td>${x.address || ""}</td>
+          <td>${x.lat ?? ""}</td>
+          <td>${x.lng ?? ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    load();
+    setInterval(load, 5000);
+  </script>
+</body>
+</html>
