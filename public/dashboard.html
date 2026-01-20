@@ -1,60 +1,369 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ICT602 Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h2 { margin-bottom: 10px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
-    th { background: #f2f2f2; text-align: left; }
-    .small { color: #666; font-size: 12px; }
-  </style>
-</head>
-<body>
-  <h2>ICT602 Location Reports</h2>
-  <div class="small">Auto refresh every 5 seconds</div>
-  <br/>
-
-  <table id="tbl">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Date/Time</th>
-        <th>User-Agent</th>
-        <th>Address</th>
-        <th>Lat</th>
-        <th>Lng</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <script>
-    async function load() {
-      const res = await fetch("/api/locations");
-      const data = await res.json();
-
-      const tbody = document.querySelector("#tbl tbody");
-      tbody.innerHTML = "";
-
-      data.forEach(x => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${x.name || ""}</td>
-          <td>${new Date(x.createdAt).toLocaleString()}</td>
-          <td>${x.userAgent || ""}</td>
-          <td>${x.address || ""}</td>
-          <td>${x.lat ?? ""}</td>
-          <td>${x.lng ?? ""}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a33;
+      --muted:#94a3b8;
+      --text:#e5e7eb;
+      --line:rgba(255,255,255,.08);
+      --accent:#22c55e;
+      --danger:#ef4444;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans);
+      background: radial-gradient(1200px 600px at 15% 0%, rgba(34,197,94,.18), transparent 60%),
+                  radial-gradient(900px 600px at 80% 20%, rgba(59,130,246,.18), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      padding: 24px;
+    }
+    .container{max-width:1200px; margin:0 auto;}
+    .topbar{
+      display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .title{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .title h1{margin:0; font-size:22px; letter-spacing:.2px}
+    .subtitle{color:var(--muted); font-size:13px}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border:1px solid var(--line);
+      border-radius:999px; background:rgba(255,255,255,.03);
+      font-size:12px; color:var(--muted);
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px; background:var(--accent);
+      box-shadow:0 0 0 6px rgba(34,197,94,.12);
+    }
+    .controls{
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card-header{
+      padding:14px 14px 10px 14px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      border-bottom:1px solid var(--line);
+    }
+    .left-tools{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .right-tools{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    input, select, button{
+      font-family:var(--sans);
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      padding:10px 12px;
+      outline:none;
+      font-size:13px;
+    }
+    input::placeholder{color:rgba(148,163,184,.8)}
+    button{
+      cursor:pointer;
+      transition: transform .05s ease, background .2s ease, border-color .2s ease;
+    }
+    button:hover{background:rgba(255,255,255,.06)}
+    button:active{transform: translateY(1px)}
+    .btn-primary{
+      border-color: rgba(34,197,94,.35);
+      background: rgba(34,197,94,.12);
+    }
+    .btn-danger{
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.10);
+    }
+    .statbar{
+      padding:10px 14px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      color:var(--muted);
+      font-size:12px;
+      border-bottom:1px solid var(--line);
+    }
+    .stats{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .badge{
+      font-family:var(--mono);
+      font-size:12px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      color:var(--text);
     }
 
+    table{width:100%; border-collapse:separate; border-spacing:0;}
+    thead th{
+      text-align:left;
+      font-size:12px;
+      color:var(--muted);
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      background:rgba(255,255,255,.02);
+      position:sticky; top:0; z-index:1;
+    }
+    tbody td{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      font-size:13px;
+      vertical-align:top;
+    }
+    tbody tr:hover{background:rgba(255,255,255,.03)}
+    .muted{color:var(--muted)}
+    .mono{font-family:var(--mono)}
+    .name{
+      font-weight:600;
+      display:flex; align-items:center; gap:10px;
+    }
+    .mini-dot{
+      width:9px; height:9px; border-radius:999px;
+      background: rgba(59,130,246,.9);
+      box-shadow:0 0 0 6px rgba(59,130,246,.12);
+      flex:0 0 auto;
+    }
+    .latlng{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .nowrap{white-space:nowrap}
+    .footer{
+      padding:12px 14px;
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .link{
+      color:rgba(147,197,253,.95);
+      text-decoration:none;
+    }
+    .link:hover{text-decoration:underline}
+    @media (max-width: 780px){
+      body{padding:14px}
+      .card-header{gap:10px}
+      thead{display:none}
+      tbody td{display:block; border-bottom:none; padding:10px 14px}
+      tbody tr{border-bottom:1px solid var(--line)}
+      tbody td::before{
+        content: attr(data-label);
+        display:block;
+        color:var(--muted);
+        font-size:11px;
+        margin-bottom:4px;
+      }
+      .nowrap{white-space:normal}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="title">
+        <h1>ICT602 Location Reports</h1>
+        <div class="subtitle">Live dashboard for received GPS reports (MongoDB Atlas)</div>
+        <div class="pill"><span class="dot"></span><span id="statusText">Connected</span></div>
+      </div>
+
+      <div class="controls">
+        <span class="pill">Auto refresh: <b id="autoText" style="color:var(--text)">ON</b></span>
+        <button id="toggleAuto" class="btn-primary">Toggle Auto</button>
+        <button id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="left-tools">
+          <input id="search" type="text" placeholder="Search name / address / user-agent..." size="32" />
+          <select id="sort">
+            <option value="desc">Sort: Latest first</option>
+            <option value="asc">Sort: Oldest first</option>
+          </select>
+          <select id="limit">
+            <option value="20">Show: 20</option>
+            <option value="50" selected>Show: 50</option>
+            <option value="200">Show: 200</option>
+          </select>
+        </div>
+
+        <div class="right-tools">
+          <button id="clearBtn" class="btn-danger">Clear Search</button>
+        </div>
+      </div>
+
+      <div class="statbar">
+        <div class="stats">
+          <span>Records:</span> <span class="badge" id="count">0</span>
+          <span>Last update:</span> <span class="badge" id="lastUpdate">-</span>
+        </div>
+        <div class="muted">
+          API: <span class="mono">/api/locations</span>
+        </div>
+      </div>
+
+      <div style="overflow:auto; max-height:70vh;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:170px;">Name</th>
+              <th style="width:190px;">Date/Time</th>
+              <th>User-Agent</th>
+              <th>Address</th>
+              <th style="width:190px;">Coordinates</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        <div>Tip: Use search to filter quickly during demo video.</div>
+        <div><a class="link" href="/api/locations" target="_blank">Open raw JSON</a></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let auto = true;
+    let timer = null;
+    let allData = [];
+
+    const els = {
+      statusText: document.getElementById("statusText"),
+      autoText: document.getElementById("autoText"),
+      toggleAuto: document.getElementById("toggleAuto"),
+      refreshBtn: document.getElementById("refreshBtn"),
+      search: document.getElementById("search"),
+      sort: document.getElementById("sort"),
+      limit: document.getElementById("limit"),
+      clearBtn: document.getElementById("clearBtn"),
+      tbody: document.getElementById("tbody"),
+      count: document.getElementById("count"),
+      lastUpdate: document.getElementById("lastUpdate"),
+    };
+
+    function formatDate(iso){
+      try { return new Date(iso).toLocaleString(); }
+      catch(e){ return iso || "-"; }
+    }
+
+    function setStatus(ok, msg){
+      els.statusText.textContent = msg;
+      els.statusText.style.color = ok ? "var(--text)" : "var(--danger)";
+      document.querySelector(".dot").style.background = ok ? "var(--accent)" : "var(--danger)";
+    }
+
+    function applyFilterAndRender(){
+      const q = (els.search.value || "").trim().toLowerCase();
+      const sortDir = els.sort.value;
+      const limit = parseInt(els.limit.value, 10);
+
+      let data = [...allData];
+
+      // sort
+      data.sort((a,b) => {
+        const ta = new Date(a.createdAt || 0).getTime();
+        const tb = new Date(b.createdAt || 0).getTime();
+        return sortDir === "desc" ? (tb - ta) : (ta - tb);
+      });
+
+      // filter
+      if(q){
+        data = data.filter(x => {
+          const name = (x.name || "").toLowerCase();
+          const addr = (x.address || "").toLowerCase();
+          const ua = (x.userAgent || "").toLowerCase();
+          return name.includes(q) || addr.includes(q) || ua.includes(q);
+        });
+      }
+
+      // limit
+      data = data.slice(0, limit);
+
+      // render
+      els.tbody.innerHTML = "";
+      data.forEach(x => {
+        const coords = `
+          <div class="latlng">
+            <span class="badge mono">lat ${x.lat ?? ""}</span>
+            <span class="badge mono">lng ${x.lng ?? ""}</span>
+          </div>
+        `;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td data-label="Name">
+            <div class="name"><span class="mini-dot"></span><span>${x.name || "-"}</span></div>
+          </td>
+          <td data-label="Date/Time" class="nowrap">${formatDate(x.createdAt)}</td>
+          <td data-label="User-Agent" class="muted">${x.userAgent || "-"}</td>
+          <td data-label="Address">${x.address || "-"}</td>
+          <td data-label="Coordinates">${coords}</td>
+        `;
+        els.tbody.appendChild(tr);
+      });
+
+      els.count.textContent = data.length;
+      els.lastUpdate.textContent = new Date().toLocaleString();
+    }
+
+    async function load(){
+      try{
+        setStatus(true, "Connected");
+        const res = await fetch("/api/locations");
+        const json = await res.json();
+        allData = Array.isArray(json) ? json : [];
+        applyFilterAndRender();
+      }catch(err){
+        setStatus(false, "Disconnected");
+        console.error(err);
+      }
+    }
+
+    function startAuto(){
+      stopAuto();
+      timer = setInterval(load, 5000);
+    }
+
+    function stopAuto(){
+      if(timer) clearInterval(timer);
+      timer = null;
+    }
+
+    els.toggleAuto.addEventListener("click", () => {
+      auto = !auto;
+      els.autoText.textContent = auto ? "ON" : "OFF";
+      if(auto) startAuto(); else stopAuto();
+    });
+
+    els.refreshBtn.addEventListener("click", load);
+
+    els.search.addEventListener("input", applyFilterAndRender);
+    els.sort.addEventListener("change", applyFilterAndRender);
+    els.limit.addEventListener("change", applyFilterAndRender);
+
+    els.clearBtn.addEventListener("click", () => {
+      els.search.value = "";
+      applyFilterAndRender();
+    });
+
+    // init
     load();
-    setInterval(load, 5000);
+    startAuto();
   </script>
 </body>
 </html>
